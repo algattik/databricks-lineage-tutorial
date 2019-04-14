@@ -1,0 +1,63 @@
+trigger:
+  - master
+
+variables:
+  RESOURCE_GROUP: lineagetutorial
+  RESOURCE_NAME_PREFIX: lineagetutorial
+  SPARK_VERSION: 2.4
+  GIT_BRANCH: release/0.3
+  DATABRICKS_HOST: https://northeurope.azuredatabricks.net/
+  DATABRICKS_TOKEN: dapi00000000000000000000000000000000
+
+pool:
+  vmImage: 'Ubuntu-16.04'
+
+steps:
+
+- task: AzureCLI@1
+  displayName: Create Azure resources
+  inputs:
+    azureSubscription: ARMConnection
+    scriptPath: before-build.sh
+
+- task: Maven@3
+  displayName: Build Spline Library and Web UI
+  inputs:
+    mavenOptions: '-Xmx3072m'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
+    publishJUnitResults: false
+    goals: package --batch-mode --activate-profiles spark-2.4 --projects databricks-spline,spline/web --also-make --define skipTests
+
+- bash: $(System.DefaultWorkingDirectory)/provision-databricks.sh
+  displayName: Provision Databricks
+
+# task: Maven@3
+# displayName: Run Spline tests
+# inputs:
+#   mavenPomFile: 'spline/pom.xml'
+#   mavenOptions: '-Xmx3072m'
+#   javaHomeOption: 'JDKVersion'
+#   jdkVersionOption: '1.8'
+#   jdkArchitectureOption: 'x64'
+#   goals: test    --batch-mode --activate-profiles spark-2.4 --projects web --also-make --define test.spline.mongodb.url="$(COSMOSDB_CONN_STRING)"
+
+- task: AzureCLI@1
+  displayName: Provision Webapp
+  inputs:
+    azureSubscription: ARMConnection
+    scriptPath: provision-webapp.sh
+
+- task: AzureRmWebAppDeployment@3
+  displayName: 'Deploy Spline UI WAR to Azure App Service'
+  inputs:
+    azureSubscription: ARMConnection
+    WebAppName: $(WEBAPP_NAME)
+    Package: '$(System.DefaultWorkingDirectory)/ROOT.war'
+
+- bash: for i in {1..40}; do curl --silent --show-error --fail $WEBAPP_URL && break || sleep 10; done
+  displayName: Prewarm Webapp
+
+- bash: echo "$WEBAPP_URL"
+  displayName: Display Webapp URL

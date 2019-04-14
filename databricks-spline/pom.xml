@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>databricks-spline</artifactId>
+  <packaging>jar</packaging>
+  <parent>
+    <groupId>com.cloudarchitected.spline</groupId>
+    <artifactId>databricks-spline-parent</artifactId>
+    <version>0.3.7-SNAPSHOT</version>
+  </parent>
+  <properties>
+    <spline.version>${project.version}</spline.version>
+    <spark.version>2.4</spark.version>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>za.co.absa.spline</groupId>
+      <artifactId>spline-core</artifactId>
+      <version>${spline.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>za.co.absa.spline</groupId>
+      <artifactId>spline-core-spark-adapter-${spark.version}</artifactId>
+      <version>${spline.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.apache.spark</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>za.co.absa.spline</groupId>
+      <artifactId>spline-persistence-mongo</artifactId>
+      <version>${spline.version}</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.1</version>
+        <executions>
+          <!-- Run shade goal on package phase -->
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
